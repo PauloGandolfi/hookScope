@@ -1,0 +1,12 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #e9f1f7; background: #0b1725; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+.page { display: grid; min-height: 100vh; place-items: center; padding: 24px; }
+.card { width: min(100%, 600px); padding: clamp(32px, 7vw, 64px); border: 1px solid #284158; border-radius: 24px; background: #12253a; box-shadow: 0 20px 70px #0004; }
+.eyebrow { color: #5dd8d2; font-size: 12px; font-weight: 700; letter-spacing: .16em; }
+h1 { margin: 20px 0 12px; font-size: clamp(42px, 8vw, 68px); letter-spacing: -.05em; }
+p { color: #afc2d2; line-height: 1.6; }
+.status { display: inline-flex; align-items: center; gap: 10px; margin-top: 26px; padding: 12px 16px; border: 1px solid #476176; border-radius: 999px; font-size: 14px; }
+.status__dot { width: 9px; height: 9px; border-radius: 50%; background: #9fb0bb; }
+.status--up .status__dot { background: #4cdb9a; }
+.status--down .status__dot, .status--error .status__dot { background: #ff8a83; }

@@ -1,0 +1,27 @@
+{
+  "name": "hookscope-web",
+  "private": true,
+  "version": "0.0.1",
+  "packageManager": "pnpm@11.25.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "10.11.0",
+    "typescript": "6.0.2",
+    "typescript-eslint": "8.71.2",
+    "vite": "8.3.1"
+  }
+}
