@@ -17,6 +17,7 @@ Todas as rotas são relativas a `http://localhost:8080`. Corpos usam JSON. Erros
 | GET | `/api/v1/projects/{id}/api-keys` | Metadados das chaves, sem segredo |
 | DELETE | `/api/v1/projects/{id}/api-keys/{keyId}` | Chave revogada (204) |
 | POST | `/api/v1/events` | Evento ingerido (201) ou reenvio idempotente (200) |
+| GET | `/api/v1/projects/{id}/events` | Página filtrada de eventos do projeto próprio |
 
 Exemplo em PowerShell, com valores fictícios. Execute as chamadas na mesma sessão para preservar o cookie. Substitua o ID do projeto retornado:
 
@@ -68,3 +69,26 @@ Invoke-RestMethod http://localhost:8080/api/v1/events `
 O primeiro envio retorna `201` e `duplicate: false`. Um reenvio equivalente do mesmo `eventId` retorna `200`, preserva o `ingestedAt` original e informa `duplicate: true`. O mesmo identificador com conteúdo diferente retorna `409 event_conflict`.
 
 Chaves ausentes, inválidas, expiradas ou revogadas retornam `401 invalid_api_key`. Violações do contrato retornam `400 invalid_event`; metadados acima de 16 KiB retornam `413 event_too_large`. Consulte o [contrato de eventos v1](event-contract-v1.md) para regras e limites completos.
+
+
+## Consulta de eventos
+
+A consulta requer a sessão do proprietário do projeto:
+
+```powershell
+Invoke-RestMethod "http://localhost:8080/api/v1/projects/$($createdProject.id)/events?page=0&size=20&type=payment.authorization&status=SUCCESS&from=2026-10-01T00:00:00Z&to=2026-11-01T00:00:00Z" `
+  -WebSession $webSession
+```
+
+Todos os filtros são opcionais:
+
+| Parâmetro | Regra |
+| --- | --- |
+| `page` | Índice iniciado em zero; padrão `0`. |
+| `size` | Entre 1 e 100; padrão `20`. |
+| `type` | Correspondência exata com o tipo do evento. |
+| `status` | `SUCCESS`, `ERROR`, `TIMEOUT` ou `CANCELLED`. |
+| `from` | Inclui eventos com `occurredAt >= from`. |
+| `to` | Inclui eventos com `occurredAt < to`. |
+
+Os eventos são ordenados por `occurredAt` decrescente e, em caso de empate, por `eventId` decrescente. A resposta contém `content`, `page`, `size`, `totalElements` e `totalPages`. Projetos de outros usuários retornam `404 project_not_found`; intervalos invertidos ou vazios retornam `400 invalid_event_query`.
