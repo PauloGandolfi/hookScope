@@ -52,7 +52,7 @@ Abra `http://localhost:5173`. A página consulta `GET /actuator/health` pelo pro
 Invoke-RestMethod http://localhost:8080/actuator/health
 ```
 
-Na primeira inicialização, o Flyway cria o schema `hookscope` e executa V1 e V2. A V2 cria `app_user`, `project` e `api_key`. O volume `postgres_data` preserva os dados entre reinícios. A página inicial agora apresenta cadastro/login; após entrar, você pode criar projetos e gerenciar API Keys.
+Na primeira inicialização, o Flyway cria o schema `hookscope` e executa V1, V2 e V3. A V2 cria `app_user`, `project` e `api_key`; a V3 cria a persistência de eventos e seus índices de consulta. O volume `postgres_data` preserva os dados entre reinícios. A página inicial agora apresenta cadastro/login; após entrar, você pode criar projetos e gerenciar API Keys.
 
 ### WSL/Linux
 
@@ -90,7 +90,7 @@ pnpm run lint
 pnpm run build
 ```
 
-`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest` e `PhaseOneIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves; são ignorados automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa ambos os jobs sem credenciais reais.
+`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest` e `PhaseOneIntegrationTest` usam Testcontainers para validar migrations, persistência e restrições de eventos, autenticação, CSRF, isolamento de projetos e chaves; são ignorados automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa ambos os jobs sem credenciais reais.
 
 Para encerrar o banco: `docker compose -f infra/compose.yaml down`. Não use `down -v` se quiser preservar os dados.
 
