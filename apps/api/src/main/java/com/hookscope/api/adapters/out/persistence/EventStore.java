@@ -3,7 +3,6 @@ package com.hookscope.api.adapters.out.persistence;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -64,7 +63,7 @@ public class EventStore {
 
     private JsonNode read(String metadata) throws SQLException {
         try {
-            return json.readTree(metadata.getBytes(StandardCharsets.UTF_8));
+            return json.readTree(metadata);
         } catch (JsonProcessingException exception) {
             throw new SQLException("Stored event metadata is invalid.", exception);
         }
