@@ -6,14 +6,14 @@
 | 01 | Autenticação, usuários, projetos e API Keys | Concluída |
 | 02 | API de ingestão, persistência e consulta de eventos | Concluída |
 | 03 | Aplicação simuladora de integrações | Concluída |
-| 04 | Dashboard web de monitoramento | Próxima |
+| 04 | Dashboard web de monitoramento | Em andamento |
 | 05 | SDK Java para instrumentação HTTP automática | Planejada |
 | 06 | Métricas e analytics | Planejada |
 | 07 | Alertas e notificações | Planejada |
 | 08 | Segurança, performance e robustez | Planejada |
 | 09 | Deploy, CI/CD e documentação final | Planejada |
 
-As Fases 00–03 entregaram a fundação, identidade, projetos, gestão de API Keys, o ciclo completo de eventos e uma aplicação simuladora com perfis de carga. A próxima etapa é a Fase 04, com o dashboard web de monitoramento.
+As Fases 00–03 entregaram a fundação, identidade, projetos, gestão de API Keys, o ciclo completo de eventos e uma aplicação simuladora com perfis de carga. A Fase 04 está em andamento com o dashboard web de monitoramento.
 
 ## Fase 02 — eventos
 
@@ -37,3 +37,13 @@ A Fase 03 foi concluída com:
 - [x] Adicionar perfis de carga e falhas controláveis.
 - [x] Integrar o simulador ao ambiente Docker local.
 - [x] Documentar o [fluxo completo de demonstração](local-demo.md).
+
+## Fase 04 — dashboard web
+
+A implementação da Fase 04 segue esta ordem:
+
+- [x] Exibir eventos recentes e indicadores da página por projeto.
+- [x] Adicionar filtros por tipo, status e período, com paginação.
+- [ ] Adicionar atualização automática e preferências de visualização.
+- [ ] Criar visualizações agregadas de status e latência.
+- [ ] Cobrir os fluxos críticos do dashboard com testes automatizados.

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { api, ApiClientError, type ApiKey, type CreatedApiKey, type Project, type ProjectPage, type User } from './api'
+import EventDashboard from './EventDashboard'
 
 type Props = {
   user: User
@@ -155,6 +156,7 @@ function ProjectDetail({ projectId, navigate, sessionExpired }: { projectId: str
     {loading ? <div className="panel"><p className="muted">Carregando projeto…</p></div> : !project ? <div className="notice error" role="alert">{error || 'Projeto não encontrado.'}</div> : <>
       <div className="page-heading"><div><div className="eyebrow">PROJETO</div><h1>{project.name}</h1><p>{project.description || 'Sem descrição'}</p></div><span className="count-pill">Criado em {formatDate(project.createdAt)}</span></div>
       {error && <div className="notice error" role="alert">{error}</div>}
+      <EventDashboard projectId={projectId} sessionExpired={sessionExpired} />
       <div className="content-grid detail-grid">
         <section className="panel"><div className="panel-heading"><h2>Informações</h2></div><form onSubmit={event => void save(event)}>
           <label>Nome<input required maxLength={120} value={name} onChange={event => setName(event.target.value)} /></label>
