@@ -44,6 +44,6 @@ A implementação da Fase 04 segue esta ordem:
 
 - [x] Exibir eventos recentes e indicadores da página por projeto.
 - [x] Adicionar filtros por tipo, status e período, com paginação.
-- [ ] Adicionar atualização automática e preferências de visualização.
+- [x] Adicionar atualização automática e preferências de visualização.
 - [ ] Criar visualizações agregadas de status e latência.
 - [ ] Cobrir os fluxos críticos do dashboard com testes automatizados.
