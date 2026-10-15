@@ -73,17 +73,18 @@ export function loadConfig(environment = process.env) {
   }
 
   const profile = configuredProfile(environment.SIMULATOR_PROFILE)
+  const customInterval = environment.SIMULATOR_INTERVAL_MS?.trim()
   return {
     apiKey,
     apiUrl: parsedUrl.toString().replace(/\/$/, ''),
     profile: profile.name,
     batchSize: profile.batchSize,
-    intervalMs: environment.SIMULATOR_INTERVAL_MS === undefined
-      ? profile.intervalMs
-      : integer(environment.SIMULATOR_INTERVAL_MS, 'SIMULATOR_INTERVAL_MS', {
+    intervalMs: customInterval
+      ? integer(customInterval, 'SIMULATOR_INTERVAL_MS', {
         minimum: 100,
         maximum: 60_000,
-      }),
+      })
+      : profile.intervalMs,
     eventCount: integer(environment.SIMULATOR_EVENT_COUNT ?? '0', 'SIMULATOR_EVENT_COUNT', {
       minimum: 0,
       maximum: 100_000,

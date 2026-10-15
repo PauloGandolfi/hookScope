@@ -41,6 +41,20 @@ npm start
 
 Omita `SIMULATOR_EVENT_COUNT` ou use `0` para execução contínua. Pressione `Ctrl+C` para encerrar.
 
+## Executar com Docker Compose
+
+Com a API rodando no host e a API Key disponível na sessão:
+
+```powershell
+$env:HOOKSCOPE_API_KEY = 'cole-a-chave-gerada-aqui'
+$env:SIMULATOR_PROFILE = 'burst'
+$env:SIMULATOR_EVENT_COUNT = '50'
+
+docker compose -f infra/compose.yaml --profile simulator up --build simulator
+```
+
+O serviço é opcional e não inicia no comando padrão do Compose. Dentro do contêiner, a API é acessada por `http://host.docker.internal:8080`; altere `SIMULATOR_DOCKER_API_URL` quando necessário. A imagem executa os testes durante o build e roda como usuário sem privilégios.
+
 ## Testar
 
 ```powershell
