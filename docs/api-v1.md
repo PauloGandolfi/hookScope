@@ -1,6 +1,6 @@
-# API HTTP v1 — Fase 01
+# API HTTP v1 — Fases 01–02
 
-Todas as rotas são relativas a `http://localhost:8080`. Corpos usam JSON. Erros retornam `{"code":"...","message":"..."}`. Rotas privadas requerem o cookie de sessão. POST, PATCH e DELETE requerem `X-CSRF-TOKEN`, obtido em `GET /api/v1/auth/csrf`.
+Todas as rotas são relativas a `http://localhost:8080`. Corpos usam JSON. Erros retornam `{"code":"...","message":"..."}`. Rotas de gestão requerem o cookie de sessão; seus métodos POST, PATCH e DELETE requerem `X-CSRF-TOKEN`, obtido em `GET /api/v1/auth/csrf`. A ingestão de eventos é stateless, usa API Key Bearer e não requer CSRF.
 
 | Método | Rota | Resultado |
 | --- | --- | --- |
@@ -16,6 +16,7 @@ Todas as rotas são relativas a `http://localhost:8080`. Corpos usam JSON. Erros
 | POST | `/api/v1/projects/{id}/api-keys` | Chave criada; segredo retornado uma única vez (201) |
 | GET | `/api/v1/projects/{id}/api-keys` | Metadados das chaves, sem segredo |
 | DELETE | `/api/v1/projects/{id}/api-keys/{keyId}` | Chave revogada (204) |
+| POST | `/api/v1/events` | Evento ingerido (201) ou reenvio idempotente (200) |
 
 Exemplo em PowerShell, com valores fictícios. Execute as chamadas na mesma sessão para preservar o cookie. Substitua o ID do projeto retornado:
 
@@ -38,3 +39,32 @@ Invoke-RestMethod http://localhost:8080/api/v1/auth/logout -Method Post -WebSess
 ```
 
 Para editar o projeto, use `PATCH /api/v1/projects/{id}` com `{"name":"Novo nome","description":"Nova descrição"}`. Para listar, use `GET /api/v1/projects?page=0&size=20`. A resposta de criação de chave contém `apiKey` (metadados) e `key` (segredo); a listagem contém apenas metadados. `expiresAt` é opcional na criação e deve ser um instante ISO 8601 futuro. Chaves revogadas permanecem na listagem como histórico, mas não são válidas.
+
+
+## Ingestão de eventos
+
+Envie a API Key no cabeçalho `Authorization: Bearer <api-key>`. O projeto é derivado da chave e não deve ser informado no corpo.
+
+```powershell
+$event = @{
+  eventId = [guid]::NewGuid().ToString()
+  type = 'payment.authorization'
+  status = 'SUCCESS'
+  durationMs = 184
+  occurredAt = [DateTimeOffset]::UtcNow.ToString('o')
+  metadata = @{
+    provider = 'example-pay'
+    retry = $false
+  }
+} | ConvertTo-Json
+
+Invoke-RestMethod http://localhost:8080/api/v1/events `
+  -Method Post `
+  -Headers @{ Authorization = "Bearer $($createdKey.key)" } `
+  -ContentType 'application/json' `
+  -Body $event
+```
+
+O primeiro envio retorna `201` e `duplicate: false`. Um reenvio equivalente do mesmo `eventId` retorna `200`, preserva o `ingestedAt` original e informa `duplicate: true`. O mesmo identificador com conteúdo diferente retorna `409 event_conflict`.
+
+Chaves ausentes, inválidas, expiradas ou revogadas retornam `401 invalid_api_key`. Violações do contrato retornam `400 invalid_event`; metadados acima de 16 KiB retornam `413 event_too_large`. Consulte o [contrato de eventos v1](event-contract-v1.md) para regras e limites completos.
