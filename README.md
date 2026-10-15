@@ -8,6 +8,7 @@ Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam
 | --- | --- |
 | `apps/api` | Spring Boot e Maven Wrapper |
 | `apps/web` | React, TypeScript e Vite |
+| `apps/simulator` | Simulador de integrações em Node.js |
 | `infra/compose.yaml` | PostgreSQL local |
 | `docs/architecture` | Decisões técnicas |
 | `docs/roadmap.md` | Fases 00–09 |
@@ -18,7 +19,7 @@ Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam
 ## Versões e pré-requisitos
 
 - JDK 21; Spring Boot **3.5.16**; Maven Wrapper **3.3.4** com Maven **3.9.16**.
-- Node.js **24 LTS** e pnpm **11.25.0**; React **19.3.0**; TypeScript **6.0.2**; Vite **8.3.1**; ESLint **10.11.0**.
+- Node.js **24 LTS** e pnpm **11.25.0**; React **19.3.0**; TypeScript **6.0.2**; Vite **8.3.1**; ESLint **10.11.0**. O simulador usa apenas recursos nativos do Node.js.
 - Docker Desktop com Docker Compose; PostgreSQL **17** (imagem oficial).
 - Git.
 
@@ -45,6 +46,17 @@ cd apps/web
 pnpm install --frozen-lockfile
 pnpm run dev
 ```
+
+Para produzir eventos de exemplo, crie uma API Key pela interface e execute em outro terminal:
+
+```powershell
+cd apps/simulator
+$env:HOOKSCOPE_API_KEY = 'cole-a-chave-gerada-aqui'
+$env:SIMULATOR_EVENT_COUNT = '10'
+npm start
+```
+
+O valor `0` em `SIMULATOR_EVENT_COUNT` mantém o simulador em execução até `Ctrl+C`. Consulte [a documentação do simulador](apps/simulator/README.md) para todas as opções.
 
 Abra `http://localhost:5173`. A página consulta `GET /actuator/health` pelo proxy do Vite. Com o banco e a API disponíveis, a resposta da API é `{"status":"UP"}` e a página mostra **API operacional**. Se a API não responder ou retornar estado diferente, a página mostra indisponibilidade. Consulte diretamente com:
 
@@ -88,9 +100,11 @@ cd ../web
 pnpm install --frozen-lockfile
 pnpm run lint
 pnpm run build
+cd ../simulator
+npm test
 ```
 
-`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest`, `PhaseOneIntegrationTest`, `EventIngestionIntegrationTest` e `EventQueryIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves, além da ingestão, idempotência, validação e consulta de eventos. Esses testes são ignorados automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa os jobs da API e da web sem credenciais reais.
+`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest`, `PhaseOneIntegrationTest`, `EventIngestionIntegrationTest` e `EventQueryIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves, além da ingestão, idempotência, validação e consulta de eventos. Esses testes são ignorados automaticamente se Docker não estiver disponível. O simulador possui testes para configuração, geração e envio de eventos. No GitHub Actions, o runner executa os jobs da API, da web e do simulador sem credenciais reais.
 
 Para encerrar o banco: `docker compose -f infra/compose.yaml down`. Não use `down -v` se quiser preservar os dados.
 
