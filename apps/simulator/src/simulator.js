@@ -8,6 +8,15 @@ const scenarios = Object.freeze([
   { type: 'shipment.dispatch', integration: 'logistics', provider: 'example-logistics' },
 ])
 
+export const loadProfiles = Object.freeze({
+  demo: Object.freeze({ intervalMs: 1_000, batchSize: 1 }),
+  steady: Object.freeze({ intervalMs: 250, batchSize: 1 }),
+  burst: Object.freeze({ intervalMs: 1_000, batchSize: 10 }),
+})
+
+const failureModes = Object.freeze(['mixed', 'error', 'timeout', 'cancelled'])
+const mixedFailureStatuses = Object.freeze(['ERROR', 'TIMEOUT', 'CANCELLED'])
+
 function integer(value, name, { minimum, maximum }) {
   if (!/^\d+$/.test(value ?? '')) {
     throw new Error(`${name} deve ser um número inteiro.`)
@@ -20,12 +29,30 @@ function integer(value, name, { minimum, maximum }) {
   return parsed
 }
 
-function statusFor(random) {
-  const roll = random()
-  if (roll < 0.72) return 'SUCCESS'
-  if (roll < 0.87) return 'ERROR'
-  if (roll < 0.96) return 'TIMEOUT'
-  return 'CANCELLED'
+function configuredProfile(value) {
+  const name = (value || 'demo').trim().toLowerCase()
+  const profile = loadProfiles[name]
+  if (!profile) {
+    throw new Error(`SIMULATOR_PROFILE deve ser um de: ${Object.keys(loadProfiles).join(', ')}.`)
+  }
+  return { name, ...profile }
+}
+
+function configuredFailureMode(value) {
+  const mode = (value || 'mixed').trim().toLowerCase()
+  if (!failureModes.includes(mode)) {
+    throw new Error(`SIMULATOR_FAILURE_MODE deve ser um de: ${failureModes.join(', ')}.`)
+  }
+  return mode
+}
+
+function eventStatus(random, failureRate, failureMode) {
+  if (random() * 100 >= failureRate) return { status: 'SUCCESS', simulatedFailure: false }
+
+  const status = failureMode === 'mixed'
+    ? mixedFailureStatuses[Math.floor(random() * mixedFailureStatuses.length)]
+    : failureMode.toUpperCase()
+  return { status, simulatedFailure: true }
 }
 
 export function loadConfig(environment = process.env) {
@@ -35,20 +62,28 @@ export function loadConfig(environment = process.env) {
   }
 
   const configuredUrl = environment.HOOKSCOPE_API_URL?.trim() || 'http://localhost:8080'
-  let apiUrl
+  let parsedUrl
   try {
-    apiUrl = new URL(configuredUrl).toString().replace(/\/$/, '')
+    parsedUrl = new URL(configuredUrl)
   } catch {
-    throw new Error('HOOKSCOPE_API_URL deve ser uma URL válida.')
+    throw new Error('HOOKSCOPE_API_URL deve ser uma URL HTTP válida.')
+  }
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new Error('HOOKSCOPE_API_URL deve ser uma URL HTTP válida.')
   }
 
+  const profile = configuredProfile(environment.SIMULATOR_PROFILE)
   return {
     apiKey,
-    apiUrl,
-    intervalMs: integer(environment.SIMULATOR_INTERVAL_MS ?? '1000', 'SIMULATOR_INTERVAL_MS', {
-      minimum: 100,
-      maximum: 60_000,
-    }),
+    apiUrl: parsedUrl.toString().replace(/\/$/, ''),
+    profile: profile.name,
+    batchSize: profile.batchSize,
+    intervalMs: environment.SIMULATOR_INTERVAL_MS === undefined
+      ? profile.intervalMs
+      : integer(environment.SIMULATOR_INTERVAL_MS, 'SIMULATOR_INTERVAL_MS', {
+        minimum: 100,
+        maximum: 60_000,
+      }),
     eventCount: integer(environment.SIMULATOR_EVENT_COUNT ?? '0', 'SIMULATOR_EVENT_COUNT', {
       minimum: 0,
       maximum: 100_000,
@@ -57,6 +92,11 @@ export function loadConfig(environment = process.env) {
       minimum: 100,
       maximum: 60_000,
     }),
+    failureRate: integer(environment.SIMULATOR_FAILURE_RATE ?? '20', 'SIMULATOR_FAILURE_RATE', {
+      minimum: 0,
+      maximum: 100,
+    }),
+    failureMode: configuredFailureMode(environment.SIMULATOR_FAILURE_MODE),
   }
 }
 
@@ -64,9 +104,12 @@ export function createEvent({
   random = Math.random,
   now = () => new Date(),
   id = randomUUID,
+  failureRate = 20,
+  failureMode = 'mixed',
+  profile = 'demo',
 } = {}) {
   const scenario = scenarios[Math.floor(random() * scenarios.length)]
-  const status = statusFor(random)
+  const { status, simulatedFailure } = eventStatus(random, failureRate, failureMode)
   const durationMs = status === 'TIMEOUT'
     ? 5_000 + Math.floor(random() * 5_001)
     : 40 + Math.floor(random() * 1_961)
@@ -81,6 +124,8 @@ export function createEvent({
       integration: scenario.integration,
       provider: scenario.provider,
       attempt: 1 + Math.floor(random() * 3),
+      loadProfile: profile,
+      simulatedFailure,
       simulator: true,
     },
   }
@@ -137,12 +182,26 @@ export async function runSimulator(config, {
   let sent = 0
 
   while (!signal?.aborted && (config.eventCount === 0 || sent < config.eventCount)) {
-    const event = createEvent({ random, now, id })
-    const result = await sendEvent(config, event, { fetchImpl, signal })
-    sent += 1
-    logger.log(
-      `[${sent}] ${event.type} ${event.status} -> HTTP ${result.status} (${event.eventId})`,
+    const remaining = config.eventCount === 0 ? config.batchSize : config.eventCount - sent
+    const batchSize = Math.min(config.batchSize, remaining)
+    const events = Array.from({ length: batchSize }, () => createEvent({
+      random,
+      now,
+      id,
+      failureRate: config.failureRate,
+      failureMode: config.failureMode,
+      profile: config.profile,
+    }))
+    const results = await Promise.all(
+      events.map(event => sendEvent(config, event, { fetchImpl, signal })),
     )
+
+    events.forEach((event, index) => {
+      sent += 1
+      logger.log(
+        `[${sent}] ${event.type} ${event.status} -> HTTP ${results[index].status} (${event.eventId})`,
+      )
+    })
 
     if (!signal?.aborted && (config.eventCount === 0 || sent < config.eventCount)) {
       await sleeper(config.intervalMs, signal)
