@@ -1,58 +1,52 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import AuthPage from './AuthPage'
+import WorkspacePage from './WorkspacePage'
+import { api, currentUser, type User } from './api'
 
-type HealthState = 'loading' | 'up' | 'down' | 'error'
+export default function App() {
+  const [route, setRoute] = useState(window.location.pathname)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-function App() {
-  const [health, setHealth] = useState<HealthState>('loading')
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    async function checkHealth() {
-      try {
-        const response = await fetch('/actuator/health', {
-          cache: 'no-store',
-          signal: controller.signal,
-        })
-        if (!response.ok) {
-          setHealth('down')
-          return
-        }
-        const payload: unknown = await response.json()
-        setHealth(
-          typeof payload === 'object' && payload !== null && 'status' in payload && payload.status === 'UP'
-            ? 'up'
-            : 'down',
-        )
-      } catch {
-        if (!controller.signal.aborted) setHealth('error')
-      }
-    }
-
-    void checkHealth()
-    return () => controller.abort()
+  const navigate = useCallback((path: string) => {
+    window.history.pushState({}, '', path)
+    setRoute(window.location.pathname)
+    window.scrollTo(0, 0)
   }, [])
 
-  const label = {
-    loading: 'Verificando conexão…',
-    up: 'API operacional',
-    down: 'API indisponível',
-    error: 'Não foi possível consultar a API',
-  }[health]
+  const sessionExpired = useCallback(() => {
+    setUser(null)
+    navigate('/login')
+  }, [navigate])
 
-  return (
-    <main className="page">
-      <section className="card">
-        <span className="eyebrow">FUNDAÇÃO · FASE 00</span>
-        <h1>HookScope</h1>
-        <p>Base técnica para monitoramento de APIs e integrações.</p>
-        <div className={`status status--${health}`} role="status" aria-live="polite">
-          <span className="status__dot" aria-hidden="true" />
-          <span>{label}</span>
-        </div>
-      </section>
-    </main>
-  )
+  const loadSession = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try { setUser(await currentUser()) }
+    catch { setError('Não foi possível consultar sua sessão. Verifique a conexão com a API.') }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { void loadSession() }, [loadSession])
+  useEffect(() => {
+    const onPopState = () => setRoute(window.location.pathname)
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+  useEffect(() => {
+    if (!loading && user && !route.startsWith('/projects')) navigate('/projects')
+    if (!loading && !user && route.startsWith('/projects')) navigate('/login')
+  }, [loading, user, route, navigate])
+
+  async function logout() {
+    await api<void>('/api/v1/auth/logout', 'POST')
+    setUser(null)
+    navigate('/login')
+  }
+
+  if (loading) return <div className="app-splash"><div className="brand-mark">H<span>●</span></div><p>Carregando sua sessão…</p></div>
+  if (error) return <div className="app-splash"><div className="brand-mark">H<span>●</span></div><p role="alert">{error}</p><button className="primary" onClick={() => void loadSession()}>Tentar novamente</button></div>
+  if (!user) return <AuthPage mode={route === '/register' ? 'register' : 'login'} onNavigate={navigate} onAuthenticated={loggedIn => { setUser(loggedIn); navigate('/projects') }} />
+  return <WorkspacePage user={user} route={route} navigate={navigate} logout={logout} sessionExpired={sessionExpired} />
 }
-
-export default App

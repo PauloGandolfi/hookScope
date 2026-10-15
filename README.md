@@ -1,6 +1,6 @@
 # HookScope
 
-Fundação técnica de uma futura plataforma SaaS para monitoramento de APIs e integrações. Nesta Fase 00 há apenas infraestrutura, status de saúde e página inicial. Não há autenticação, ingestão de eventos ou dashboard.
+Plataforma para monitoramento de APIs e integrações. A Fase 01 adiciona contas, sessões, projetos e API Keys. A ingestão de eventos e o dashboard de métricas pertencem às próximas fases.
 
 ## Estrutura
 
@@ -52,7 +52,7 @@ Abra `http://localhost:5173`. A página consulta `GET /actuator/health` pelo pro
 Invoke-RestMethod http://localhost:8080/actuator/health
 ```
 
-Na primeira inicialização, o Flyway cria o schema `hookscope`, registra a migration V1 em `hookscope.flyway_schema_history` e valida o acesso ao banco. O volume `postgres_data` preserva os dados entre reinícios.
+Na primeira inicialização, o Flyway cria o schema `hookscope` e executa V1 e V2. A V2 cria `app_user`, `project` e `api_key`. O volume `postgres_data` preserva os dados entre reinícios. A página inicial agora apresenta cadastro/login; após entrar, você pode criar projetos e gerenciar API Keys.
 
 ### WSL/Linux
 
@@ -66,7 +66,7 @@ Use os mesmos comandos de Docker e pnpm. Para a API, execute `cd apps/api && ./m
 | API | 8080 | `API_PORT` |
 | PostgreSQL | 5432 | `POSTGRES_PORT`, publicado só em `127.0.0.1` |
 
-O arquivo `.env.example` lista `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `DB_URL`, `DB_USER`, `DB_PASSWORD` e `API_PORT`. São exemplos **somente para desenvolvimento local**. Para alterar os padrões, na raiz do clone copie o exemplo para `.env`, ajuste os valores e carregue as variáveis na sessão PowerShell antes de entrar em `apps/api`; o Compose lê `.env` da raiz automaticamente. Exemplo:
+O arquivo `.env.example` lista `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `DB_URL`, `DB_USER`, `DB_PASSWORD`, `API_PORT` e `SESSION_COOKIE_SECURE`. São exemplos **somente para desenvolvimento local**. Para alterar os padrões, na raiz do clone copie o exemplo para `.env`, ajuste os valores e carregue as variáveis na sessão PowerShell antes de entrar em `apps/api`; o Compose lê `.env` da raiz automaticamente. Exemplo:
 
 ```powershell
 Copy-Item .env.example .env
@@ -77,7 +77,7 @@ Get-Content .env | Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=' } | ForEa
 }
 ```
 
-Mantenha `DB_*` alinhados com `POSTGRES_*`. Se mudar `API_PORT`, ajuste o destino em `apps/web/vite.config.ts` ou use a porta padrão. Em produção, forneça segredos via ambiente e encaminhe `/actuator/health` para a API no mesmo domínio da web.
+Mantenha `DB_*` alinhados com `POSTGRES_*`. Se mudar `API_PORT`, ajuste o destino em `apps/web/vite.config.ts` ou use a porta padrão. Em produção, forneça segredos via ambiente, use HTTPS, defina `SESSION_COOKIE_SECURE=true` e encaminhe `/api` e `/actuator/health` para a API no mesmo domínio da web.
 
 ## Validação
 
@@ -90,8 +90,8 @@ pnpm run lint
 pnpm run build
 ```
 
-O teste `HealthEndpointTest` roda sem Docker. `DatabaseIntegrationTest` usa Testcontainers e valida o schema e a migration V1; é ignorado automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa ambos os jobs sem credenciais reais.
+`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest` e `PhaseOneIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves; são ignorados automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa ambos os jobs sem credenciais reais.
 
 Para encerrar o banco: `docker compose -f infra/compose.yaml down`. Não use `down -v` se quiser preservar os dados.
 
-Veja [as decisões arquiteturais](docs/architecture/decisions.md) e [o roadmap](docs/roadmap.md).
+Veja [a documentação da API](docs/api-v1.md), [a estratégia de autenticação](docs/architecture/authentication.md), [as decisões arquiteturais](docs/architecture/decisions.md) e [o roadmap](docs/roadmap.md).

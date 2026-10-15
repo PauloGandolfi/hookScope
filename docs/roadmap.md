@@ -13,4 +13,4 @@
 | 08 | Segurança, performance e robustez |
 | 09 | Deploy, CI/CD e documentação final |
 
-A Fase 00 prepara o ambiente; funcionalidades de produto começam na Fase 01.
+A Fase 00 preparou o ambiente. A Fase 01 implementa identidade, projetos e gestão de API Keys; a validação completa com PostgreSQL requer Docker.

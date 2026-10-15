@@ -34,5 +34,7 @@ class DatabaseIntegrationTest {
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
         assertThat(jdbc.queryForObject("select exists (select 1 from information_schema.schemata where schema_name = 'hookscope')", Boolean.class)).isTrue();
         assertThat(jdbc.queryForObject("select count(*) from hookscope.flyway_schema_history where version = '1' and success", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from hookscope.flyway_schema_history where version = '2' and success", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select count(*) from information_schema.tables where table_schema = 'hookscope' and table_name in ('app_user', 'project', 'api_key')", Integer.class)).isEqualTo(3);
     }
 }
