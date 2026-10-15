@@ -62,7 +62,7 @@ class DatabaseIntegrationTest {
             values (?, ?, ?, ?, ?, ?, ?::jsonb)
             """, projectId, eventId, "payment.authorization", "SUCCESS", 184,
             OffsetDateTime.parse("2026-10-15T14:32:41.583Z"),
-            "{"provider":"example-pay","retry":false}");
+            "{\"provider\":\"example-pay\",\"retry\":false}");
 
         assertThat(jdbc.queryForObject("""
             select metadata ->> 'provider'
