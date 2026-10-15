@@ -37,8 +37,9 @@ public class EventIngestionService {
         UUID projectId = apiKeys.validate(rawKey)
             .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED, "invalid_api_key", "API Key inválida."));
 
-        Instant now = Instant.now();
-        if (command.occurredAt().isAfter(now.plus(5, ChronoUnit.MINUTES))) {
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+        Instant occurredAt = command.occurredAt().truncatedTo(ChronoUnit.MICROS);
+        if (occurredAt.isAfter(now.plus(5, ChronoUnit.MINUTES))) {
             throw invalidEvent("occurredAt não pode estar mais de 5 minutos no futuro.");
         }
 
@@ -49,7 +50,7 @@ public class EventIngestionService {
             command.type(),
             command.status().name(),
             command.durationMs(),
-            command.occurredAt(),
+            occurredAt,
             now,
             metadata);
 
