@@ -1,6 +1,6 @@
 # HookScope
 
-Plataforma para monitoramento de APIs e integrações. A Fase 01 adiciona contas, sessões, projetos e API Keys. A ingestão de eventos e o dashboard de métricas pertencem às próximas fases.
+Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam a fundação, contas, sessões, projetos, API Keys e a ingestão e consulta de eventos. A próxima etapa é a Fase 03, com uma aplicação simuladora de integrações.
 
 ## Estrutura
 
@@ -90,8 +90,8 @@ pnpm run lint
 pnpm run build
 ```
 
-`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest` e `PhaseOneIntegrationTest` usam Testcontainers para validar migrations, persistência e restrições de eventos, autenticação, CSRF, isolamento de projetos e chaves; são ignorados automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa ambos os jobs sem credenciais reais.
+`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest`, `PhaseOneIntegrationTest`, `EventIngestionIntegrationTest` e `EventQueryIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves, além da ingestão, idempotência, validação e consulta de eventos. Esses testes são ignorados automaticamente se Docker não estiver disponível. No GitHub Actions, o runner executa os jobs da API e da web sem credenciais reais.
 
 Para encerrar o banco: `docker compose -f infra/compose.yaml down`. Não use `down -v` se quiser preservar os dados.
 
-Veja [a documentação da API](docs/api-v1.md), [a estratégia de autenticação](docs/architecture/authentication.md), [as decisões arquiteturais](docs/architecture/decisions.md) e [o roadmap](docs/roadmap.md).
+Veja [a documentação da API](docs/api-v1.md), [o contrato de eventos v1](docs/event-contract-v1.md), [a estratégia de autenticação](docs/architecture/authentication.md), [as decisões arquiteturais](docs/architecture/decisions.md) e [o roadmap](docs/roadmap.md).
