@@ -8,7 +8,7 @@ const baseConfig = {
   profile: 'demo',
   batchSize: 1,
   intervalMs: 1_000,
-  eventCount: 1,
+  eventCount: 0,
   requestTimeoutMs: 5_000,
   failureRate: 20,
   failureMode: 'mixed',
