@@ -24,6 +24,7 @@ test('loadConfig aplica perfis de carga e permite sobrescrever o intervalo', () 
   const burst = loadConfig({
     HOOKSCOPE_API_KEY: 'key',
     SIMULATOR_PROFILE: 'BURST',
+    SIMULATOR_INTERVAL_MS: '',
   })
   assert.equal(burst.profile, 'burst')
   assert.equal(burst.batchSize, 10)
