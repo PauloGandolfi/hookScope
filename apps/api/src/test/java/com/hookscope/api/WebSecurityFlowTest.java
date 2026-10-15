@@ -32,6 +32,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -147,6 +149,11 @@ class WebSecurityFlowTest {
         private final Map<UUID, UserEntity> users = new ConcurrentHashMap<>();
         private final Map<UUID, ProjectEntity> projects = new ConcurrentHashMap<>();
         private final Map<UUID, ApiKeyEntity> keys = new ConcurrentHashMap<>();
+
+        @Bean
+        JdbcTemplate jdbcTemplate() {
+            return new JdbcTemplate(new DriverManagerDataSource());
+        }
 
         @Bean
         UserRepository userRepository() {

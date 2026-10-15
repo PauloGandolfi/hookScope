@@ -38,9 +38,11 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
             .securityContext(config -> config.securityContextRepository(contexts))
             .sessionManagement(config -> config.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-            .csrf(config -> config.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+            .csrf(config -> config
+                .ignoringRequestMatchers("/api/v1/events")
+                .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
             .authorizeHttpRequests(config -> config
-                .requestMatchers("/actuator/health", "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/csrf").permitAll()
+                .requestMatchers("/actuator/health", "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/csrf", "/api/v1/events").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(config -> config
                 .authenticationEntryPoint((request, response, exception) -> writeError(response, mapper, 401, "unauthorized", "Autenticação necessária."))
