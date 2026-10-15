@@ -33,6 +33,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -151,7 +152,7 @@ class WebSecurityFlowTest {
 
         @Bean
         JdbcTemplate jdbcTemplate() {
-            return new JdbcTemplate();
+            return new JdbcTemplate(new DriverManagerDataSource());
         }
 
         @Bean
