@@ -50,3 +50,9 @@ jobs:
       - name: Test simulator
         working-directory: apps/simulator
         run: npm test
+      - name: Build simulator image
+        run: docker build --tag hookscope-simulator:test apps/simulator
+      - name: Validate simulator Compose profile
+        env:
+          HOOKSCOPE_API_KEY: hs_ci_placeholder
+        run: docker compose -f infra/compose.yaml --profile simulator config
