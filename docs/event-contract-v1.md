@@ -37,7 +37,7 @@ Autenticação planejada: `Authorization: Bearer <api-key>`. A API Key tem o for
 | Campo | Tipo | Obrigatório | Regras |
 | --- | --- | --- | --- |
 | `eventId` | UUID | Sim | Gerado pelo produtor. Aceita qualquer UUID válido e é idempotente dentro do projeto. |
-| `type` | string | Sim | Entre 1 e 120 caracteres; formato `segmento.segmento`, em minúsculas, validado por `^[a-z][a-z0-9]*(\\.[a-z0-9]+)*$`. |
+| `type` | string | Sim | Entre 1 e 120 caracteres; formato `segmento.segmento`, em minúsculas, validado por `^[a-z][a-z0-9]*(\.[a-z0-9]+)*$`. |
 | `status` | enum | Sim | Um de `SUCCESS`, `ERROR`, `TIMEOUT` ou `CANCELLED`. |
 | `durationMs` | inteiro | Sim | Duração em milissegundos, entre `0` e `86400000` (24 horas). |
 | `occurredAt` | timestamp | Sim | ISO 8601 com offset; normalizado para UTC. Não pode estar mais de 5 minutos no futuro em relação ao servidor. |
