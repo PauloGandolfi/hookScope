@@ -1,6 +1,6 @@
 # HookScope
 
-Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam a fundação, contas, sessões, projetos, API Keys e a ingestão e consulta de eventos. A próxima etapa é a Fase 03, com uma aplicação simuladora de integrações.
+Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam a fundação, contas, sessões, projetos, API Keys e a ingestão e consulta de eventos. A Fase 03 está em andamento com uma aplicação simuladora de integrações.
 
 ## Estrutura
 
