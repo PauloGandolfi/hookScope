@@ -52,7 +52,9 @@ Para produzir eventos de exemplo, crie uma API Key pela interface e execute em o
 ```powershell
 cd apps/simulator
 $env:HOOKSCOPE_API_KEY = 'cole-a-chave-gerada-aqui'
+$env:SIMULATOR_PROFILE = 'demo'
 $env:SIMULATOR_EVENT_COUNT = '10'
+$env:SIMULATOR_FAILURE_RATE = '20'
 npm start
 ```
 

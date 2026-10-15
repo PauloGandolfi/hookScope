@@ -10,7 +10,10 @@ process.once('SIGINT', () => {
 try {
   const config = loadConfig()
   const mode = config.eventCount === 0 ? 'contínuo' : `${config.eventCount} evento(s)`
-  console.log(`HookScope Simulator iniciado: ${mode}, intervalo de ${config.intervalMs} ms.`)
+  console.log(
+    `HookScope Simulator: perfil ${config.profile}, ${mode}, lote ${config.batchSize}, `
+      + `falhas ${config.failureRate}% (${config.failureMode}).`,
+  )
   const sent = await runSimulator(config, { signal: controller.signal })
   console.log(`Simulador encerrado após ${sent} evento(s).`)
 } catch (error) {

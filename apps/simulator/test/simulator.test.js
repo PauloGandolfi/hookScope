@@ -5,44 +5,68 @@ import { createEvent, loadConfig, runSimulator, sendEvent } from '../src/simulat
 const baseConfig = {
   apiKey: 'hs_example_secret',
   apiUrl: 'http://localhost:8080',
-  intervalMs: 100,
-  eventCount: 1,
+  profile: 'demo',
+  batchSize: 1,
+  intervalMs: 1_000,
+  eventCount: 0,
   requestTimeoutMs: 5_000,
+  failureRate: 20,
+  failureMode: 'mixed',
 }
 
-test('loadConfig aplica padrões e exige a API Key', () => {
+test('loadConfig aplica o perfil demo e exige a API Key', () => {
   assert.throws(() => loadConfig({}), /HOOKSCOPE_API_KEY/)
 
-  assert.deepEqual(loadConfig({ HOOKSCOPE_API_KEY: '  hs_example_secret  ' }), {
-    apiKey: 'hs_example_secret',
-    apiUrl: 'http://localhost:8080',
-    intervalMs: 1_000,
-    eventCount: 0,
-    requestTimeoutMs: 5_000,
-  })
+  assert.deepEqual(loadConfig({ HOOKSCOPE_API_KEY: '  hs_example_secret  ' }), baseConfig)
 })
 
-test('loadConfig rejeita limites inválidos', () => {
+test('loadConfig aplica perfis de carga e permite sobrescrever o intervalo', () => {
+  const burst = loadConfig({
+    HOOKSCOPE_API_KEY: 'key',
+    SIMULATOR_PROFILE: 'BURST',
+  })
+  assert.equal(burst.profile, 'burst')
+  assert.equal(burst.batchSize, 10)
+  assert.equal(burst.intervalMs, 1_000)
+
+  const steady = loadConfig({
+    HOOKSCOPE_API_KEY: 'key',
+    SIMULATOR_PROFILE: 'steady',
+    SIMULATOR_INTERVAL_MS: '800',
+  })
+  assert.equal(steady.profile, 'steady')
+  assert.equal(steady.batchSize, 1)
+  assert.equal(steady.intervalMs, 800)
+})
+
+test('loadConfig valida perfil, taxa, modo de falha e URL', () => {
   assert.throws(
-    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', SIMULATOR_INTERVAL_MS: '99' }),
-    /SIMULATOR_INTERVAL_MS/,
+    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', SIMULATOR_PROFILE: 'unknown' }),
+    /SIMULATOR_PROFILE/,
   )
   assert.throws(
-    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', SIMULATOR_EVENT_COUNT: '-1' }),
-    /SIMULATOR_EVENT_COUNT/,
+    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', SIMULATOR_FAILURE_RATE: '101' }),
+    /SIMULATOR_FAILURE_RATE/,
   )
   assert.throws(
-    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', HOOKSCOPE_API_URL: 'not a url' }),
+    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', SIMULATOR_FAILURE_MODE: 'random' }),
+    /SIMULATOR_FAILURE_MODE/,
+  )
+  assert.throws(
+    () => loadConfig({ HOOKSCOPE_API_KEY: 'key', HOOKSCOPE_API_URL: 'ftp://example.test' }),
     /HOOKSCOPE_API_URL/,
   )
 })
 
-test('createEvent produz um evento compatível com o contrato v1', () => {
-  const values = [0, 0.8, 0.5, 0.75]
+test('createEvent produz uma falha controlada compatível com o contrato v1', () => {
+  const values = [0, 0.1, 0, 0.5, 0.75]
   const event = createEvent({
     random: () => values.shift(),
     now: () => new Date('2026-10-15T12:00:00.000Z'),
     id: () => '018f4f9a-93f2-7f13-9d7d-7d7a3f58de21',
+    failureRate: 100,
+    failureMode: 'mixed',
+    profile: 'burst',
   })
 
   assert.deepEqual(event, {
@@ -55,9 +79,26 @@ test('createEvent produz um evento compatível com o contrato v1', () => {
       integration: 'payments',
       provider: 'example-pay',
       attempt: 3,
+      loadProfile: 'burst',
+      simulatedFailure: true,
       simulator: true,
     },
   })
+})
+
+test('createEvent respeita taxa zero e modo fixo de falha', () => {
+  const success = createEvent({ random: () => 0.5, failureRate: 0 })
+  assert.equal(success.status, 'SUCCESS')
+  assert.equal(success.metadata.simulatedFailure, false)
+
+  const timeout = createEvent({
+    random: () => 0,
+    failureRate: 100,
+    failureMode: 'timeout',
+  })
+  assert.equal(timeout.status, 'TIMEOUT')
+  assert.equal(timeout.metadata.simulatedFailure, true)
+  assert.ok(timeout.durationMs >= 5_000)
 })
 
 test('sendEvent autentica e envia JSON ao endpoint de ingestão', async () => {
@@ -94,11 +135,17 @@ test('sendEvent expõe o código de erro retornado pela API', async () => {
   )
 })
 
-test('runSimulator respeita a quantidade configurada', async () => {
+test('runSimulator envia lotes concorrentes sem exceder a quantidade', async () => {
   const delivered = []
   let sleeps = 0
   let sequence = 0
-  const config = { ...baseConfig, eventCount: 2 }
+  const config = {
+    ...baseConfig,
+    profile: 'burst',
+    batchSize: 10,
+    eventCount: 12,
+    failureRate: 0,
+  }
 
   const sent = await runSimulator(config, {
     fetchImpl: async (_url, options) => {
@@ -110,7 +157,12 @@ test('runSimulator respeita a quantidade configurada', async () => {
     logger: { log: () => {} },
   })
 
-  assert.equal(sent, 2)
-  assert.deepEqual(delivered.map(event => event.eventId), ['event-1', 'event-2'])
+  assert.equal(sent, 12)
+  assert.equal(delivered.length, 12)
+  assert.deepEqual(delivered.map(event => event.eventId), Array.from(
+    { length: 12 },
+    (_, index) => `event-${index + 1}`,
+  ))
+  assert.ok(delivered.every(event => event.metadata.loadProfile === 'burst'))
   assert.equal(sleeps, 1)
 })

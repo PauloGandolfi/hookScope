@@ -34,6 +34,6 @@ A implementação da Fase 03 segue esta ordem:
 
 - [x] Criar o núcleo executável com geração de cenários e envio autenticado.
 - [x] Validar configuração, contrato dos eventos e comunicação HTTP com testes automatizados.
-- [ ] Adicionar perfis de carga e falhas controláveis.
+- [x] Adicionar perfis de carga e falhas controláveis.
 - [ ] Integrar o simulador ao ambiente Docker local.
 - [ ] Documentar o fluxo completo de demonstração.
