@@ -15,5 +15,22 @@ services:
       timeout: 3s
       retries: 10
 
+  simulator:
+    profiles: ["simulator"]
+    build:
+      context: ../apps/simulator
+    init: true
+    environment:
+      HOOKSCOPE_API_URL: ${SIMULATOR_DOCKER_API_URL:-http://host.docker.internal:8080}
+      HOOKSCOPE_API_KEY: ${HOOKSCOPE_API_KEY:-}
+      SIMULATOR_PROFILE: ${SIMULATOR_PROFILE:-demo}
+      SIMULATOR_INTERVAL_MS: ${SIMULATOR_INTERVAL_MS:-}
+      SIMULATOR_EVENT_COUNT: ${SIMULATOR_EVENT_COUNT:-0}
+      SIMULATOR_REQUEST_TIMEOUT_MS: ${SIMULATOR_REQUEST_TIMEOUT_MS:-5000}
+      SIMULATOR_FAILURE_RATE: ${SIMULATOR_FAILURE_RATE:-20}
+      SIMULATOR_FAILURE_MODE: ${SIMULATOR_FAILURE_MODE:-mixed}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres_data:
