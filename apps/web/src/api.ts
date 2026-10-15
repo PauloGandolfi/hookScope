@@ -3,6 +3,24 @@ export type Project = { id: string; name: string; description: string | null; cr
 export type ProjectPage = { content: Project[]; number: number; totalPages: number; totalElements: number }
 export type ApiKey = { id: string; name: string; keyPrefix: string; createdAt: string; expiresAt: string | null; revokedAt: string | null; lastUsedAt: string | null }
 export type CreatedApiKey = { apiKey: ApiKey; key: string }
+export type EventStatus = 'SUCCESS' | 'ERROR' | 'TIMEOUT' | 'CANCELLED'
+export type HookEvent = {
+  projectId: string
+  eventId: string
+  type: string
+  status: EventStatus
+  durationMs: number
+  occurredAt: string
+  ingestedAt: string
+  metadata: Record<string, unknown>
+}
+export type EventPage = {
+  content: HookEvent[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
 
 export class ApiClientError extends Error {
   constructor(public status: number, message: string) { super(message) }
