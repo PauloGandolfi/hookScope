@@ -1,6 +1,6 @@
 # HookScope
 
-Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam a fundação, contas, sessões, projetos, API Keys e a ingestão e consulta de eventos. A Fase 03 está em andamento com uma aplicação simuladora de integrações.
+Plataforma para monitoramento de APIs e integrações. As Fases 00–03 entregam a fundação, contas, projetos, API Keys, ingestão e consulta de eventos e uma aplicação simuladora de integrações. A próxima etapa é a Fase 04, com o dashboard web de monitoramento.
 
 ## Estrutura
 
@@ -9,7 +9,7 @@ Plataforma para monitoramento de APIs e integrações. As Fases 00–02 entregam
 | `apps/api` | Spring Boot e Maven Wrapper |
 | `apps/web` | React, TypeScript e Vite |
 | `apps/simulator` | Simulador de integrações em Node.js |
-| `infra/compose.yaml` | PostgreSQL local |
+| `infra/compose.yaml` | PostgreSQL local e perfil opcional do simulador |
 | `docs/architecture` | Decisões técnicas |
 | `docs/roadmap.md` | Fases 00–09 |
 | `.github/workflows` | Validação contínua |
@@ -58,7 +58,7 @@ $env:SIMULATOR_FAILURE_RATE = '20'
 npm start
 ```
 
-O valor `0` em `SIMULATOR_EVENT_COUNT` mantém o simulador em execução até `Ctrl+C`. Consulte [a documentação do simulador](apps/simulator/README.md) para todas as opções.
+O valor `0` em `SIMULATOR_EVENT_COUNT` mantém o simulador em execução até `Ctrl+C`. O simulador também pode rodar pelo perfil opcional do Docker Compose. Consulte [a documentação do simulador](apps/simulator/README.md) e [o roteiro completo de demonstração](docs/local-demo.md).
 
 Abra `http://localhost:5173`. A página consulta `GET /actuator/health` pelo proxy do Vite. Com o banco e a API disponíveis, a resposta da API é `{"status":"UP"}` e a página mostra **API operacional**. Se a API não responder ou retornar estado diferente, a página mostra indisponibilidade. Consulte diretamente com:
 
@@ -80,7 +80,7 @@ Use os mesmos comandos de Docker e pnpm. Para a API, execute `cd apps/api && ./m
 | API | 8080 | `API_PORT` |
 | PostgreSQL | 5432 | `POSTGRES_PORT`, publicado só em `127.0.0.1` |
 
-O arquivo `.env.example` lista `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`, `DB_URL`, `DB_USER`, `DB_PASSWORD`, `API_PORT` e `SESSION_COOKIE_SECURE`. São exemplos **somente para desenvolvimento local**. Para alterar os padrões, na raiz do clone copie o exemplo para `.env`, ajuste os valores e carregue as variáveis na sessão PowerShell antes de entrar em `apps/api`; o Compose lê `.env` da raiz automaticamente. Exemplo:
+O arquivo `.env.example` lista as configurações do PostgreSQL, da API e do simulador. São exemplos **somente para desenvolvimento local**. Para alterar os padrões, na raiz do clone copie o exemplo para `.env`, ajuste os valores e carregue as variáveis na sessão PowerShell antes de entrar em `apps/api`; o Compose lê `.env` da raiz automaticamente. Exemplo:
 
 ```powershell
 Copy-Item .env.example .env
@@ -106,8 +106,8 @@ cd ../simulator
 npm test
 ```
 
-`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest`, `PhaseOneIntegrationTest`, `EventIngestionIntegrationTest` e `EventQueryIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves, além da ingestão, idempotência, validação e consulta de eventos. Esses testes são ignorados automaticamente se Docker não estiver disponível. O simulador possui testes para configuração, geração e envio de eventos. No GitHub Actions, o runner executa os jobs da API, da web e do simulador sem credenciais reais.
+`HealthEndpointTest` e `ApiKeyMaterialTest` rodam sem Docker. `DatabaseIntegrationTest`, `PhaseOneIntegrationTest`, `EventIngestionIntegrationTest` e `EventQueryIntegrationTest` usam Testcontainers para validar migrations, autenticação, CSRF, isolamento de projetos e chaves, além da ingestão, idempotência, validação e consulta de eventos. Esses testes são ignorados automaticamente se Docker não estiver disponível. O simulador possui testes para configuração, geração e envio de eventos. A CI também constrói sua imagem e valida o perfil do Docker Compose. No GitHub Actions, o runner executa os jobs da API, da web e do simulador sem credenciais reais.
 
 Para encerrar o banco: `docker compose -f infra/compose.yaml down`. Não use `down -v` se quiser preservar os dados.
 
-Veja [a documentação da API](docs/api-v1.md), [o contrato de eventos v1](docs/event-contract-v1.md), [a estratégia de autenticação](docs/architecture/authentication.md), [as decisões arquiteturais](docs/architecture/decisions.md) e [o roadmap](docs/roadmap.md).
+Veja [o roteiro de demonstração](docs/local-demo.md), [a documentação da API](docs/api-v1.md), [o contrato de eventos v1](docs/event-contract-v1.md), [a estratégia de autenticação](docs/architecture/authentication.md), [as decisões arquiteturais](docs/architecture/decisions.md) e [o roadmap](docs/roadmap.md).
