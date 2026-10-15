@@ -12,9 +12,9 @@ Este documento define o contrato inicial de ingestão de eventos do HookScope. E
 
 ## Requisição
 
-Endpoint planejado: `POST /api/v1/events`.
+Endpoint: `POST /api/v1/events`.
 
-Autenticação planejada: `Authorization: Bearer <api-key>`. A API Key tem o formato já definido pelo HookScope (`hs_<prefixo>_<segredo>`). Essa rota não usa sessão nem CSRF.
+Autenticação: `Authorization: Bearer <api-key>`. A API Key tem o formato definido pelo HookScope (`hs_<prefixo>_<segredo>`). Essa rota não usa sessão nem CSRF.
 
 ```json
 {
@@ -82,10 +82,7 @@ Erros seguem o formato já adotado pela API:
 ```json
 {
   "code": "invalid_event",
-  "message": "Evento inválido.",
-  "fieldErrors": {
-    "durationMs": "deve ser maior ou igual a zero"
-  }
+  "message": "Evento inválido."
 }
 ```
 
@@ -95,7 +92,7 @@ Erros seguem o formato já adotado pela API:
 | `401` | `invalid_api_key` | Chave ausente, malformada, desconhecida, expirada ou revogada. |
 | `409` | `event_conflict` | Mesmo `eventId` com conteúdo diferente no projeto. |
 | `413` | `event_too_large` | Corpo ou metadados acima do limite permitido. |
-| `429` | `rate_limit_exceeded` | Limite de ingestão excedido quando rate limiting for habilitado. |
+| `429` | `rate_limit_exceeded` | Código reservado para quando o rate limiting for habilitado; não é emitido na Fase 02. |
 
 ## Segurança e privacidade
 

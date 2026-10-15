@@ -129,6 +129,83 @@ class EventIngestionIntegrationTest {
         assertThat(body(invalidMetadata).get("code").asText()).isEqualTo("invalid_event");
     }
 
+    @Test
+    void rejectsExpiredApiKeys() throws Exception {
+        KeyFixture fixture = key();
+        ApiKeyEntity expired = apiKeys.findByKeyPrefix(fixture.prefix()).orElseThrow();
+        expired.createdAt = Instant.now().minusSeconds(120);
+        expired.expiresAt = Instant.now().minusSeconds(60);
+        apiKeys.saveAndFlush(expired);
+
+        MvcResult rejected = send(fixture.rawKey(), event(UUID.randomUUID()))
+            .andExpect(status().isUnauthorized())
+            .andReturn();
+        assertThat(body(rejected).get("code").asText()).isEqualTo("invalid_api_key");
+    }
+
+    @Test
+    void scopesEventIdempotencyToEachProject() throws Exception {
+        KeyFixture first = key();
+        KeyFixture second = key();
+        UUID eventId = UUID.randomUUID();
+        ObjectNode payload = event(eventId);
+
+        send(first.rawKey(), payload)
+            .andExpect(status().isCreated());
+        send(second.rawKey(), payload)
+            .andExpect(status().isCreated());
+
+        assertThat(eventCount(first.projectId(), eventId)).isEqualTo(1);
+        assertThat(eventCount(second.projectId(), eventId)).isEqualTo(1);
+        assertThat(database.queryForObject(
+            "select count(*) from hookscope.event where event_id = ?",
+            Integer.class, eventId)).isEqualTo(2);
+    }
+
+    @Test
+    void enforcesMetadataAndPayloadLimits() throws Exception {
+        KeyFixture fixture = key();
+
+        ObjectNode maximumKeys = event(UUID.randomUUID());
+        ObjectNode acceptedMetadata = (ObjectNode) maximumKeys.get("metadata");
+        acceptedMetadata.removeAll();
+        for (int index = 0; index < 50; index++) {
+            acceptedMetadata.put("key" + index, index);
+        }
+        send(fixture.rawKey(), maximumKeys)
+            .andExpect(status().isCreated());
+
+        ObjectNode tooManyKeys = event(UUID.randomUUID());
+        ObjectNode rejectedMetadata = (ObjectNode) tooManyKeys.get("metadata");
+        rejectedMetadata.removeAll();
+        for (int index = 0; index < 51; index++) {
+            rejectedMetadata.put("key" + index, index);
+        }
+        MvcResult invalidKeys = send(fixture.rawKey(), tooManyKeys)
+            .andExpect(status().isBadRequest())
+            .andReturn();
+        assertThat(body(invalidKeys).get("code").asText()).isEqualTo("invalid_event");
+
+        ObjectNode oversized = event(UUID.randomUUID());
+        ((ObjectNode) oversized.get("metadata")).removeAll().put("payload", "x".repeat(16 * 1024));
+        MvcResult tooLarge = send(fixture.rawKey(), oversized)
+            .andExpect(status().isPayloadTooLarge())
+            .andReturn();
+        assertThat(body(tooLarge).get("code").asText()).isEqualTo("event_too_large");
+    }
+
+    @Test
+    void rejectsUndocumentedRequestFields() throws Exception {
+        KeyFixture fixture = key();
+        ObjectNode payload = event(UUID.randomUUID())
+            .put("projectId", UUID.randomUUID().toString());
+
+        MvcResult rejected = send(fixture.rawKey(), payload)
+            .andExpect(status().isBadRequest())
+            .andReturn();
+        assertThat(body(rejected).get("code").asText()).isEqualTo("invalid_event");
+    }
+
     private org.springframework.test.web.servlet.ResultActions send(String rawKey, JsonNode payload) throws Exception {
         return http.perform(post("/api/v1/events")
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + rawKey)
